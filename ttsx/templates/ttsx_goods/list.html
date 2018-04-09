@@ -1,0 +1,127 @@
+{%extends 'ttsx_goods/base.html'%}
+{%block head%}
+<script>
+	<!--实现添加购物车代码-->
+	function add_cart(gid) {
+		//判断是否登录，如果登录则添加，如果未登录则转向登录
+		//用户登录储存在session中，
+		$.get('/user/islogin/',function (data) {
+
+		    if(data.islogin){
+				//如果登录则添加
+				$.get('/cart/add/',{'gid':gid},function (data) {
+					if (data.isadd){
+					//    添加成功
+						alert('添加成功');
+
+					}else{
+					    alert('添加失败，请稍候重试');
+					}
+
+                });
+			}else{
+			    //如果未登录则转向登录
+			    location.href = '/user/login/';
+			}
+        });
+    }
+
+</script>
+{%endblock head%}
+
+
+
+{%block detail%}
+	<div class="breadcrumb">
+		<a href="#">全部分类</a>
+		<span>></span>
+		<!--t1 接收到商品的id，传进来，之后显示分类名称-->
+		<a href="#">{{t1}}</a>
+	</div>
+{%endblock detail%}
+
+{%block right%}
+	<div class="r_wrap fr clearfix">
+			<div class="sort_bar">
+				<!--判断orderby是多少，点击谁，背景就替换到谁-->
+				<a href="/list{{t1.id}}_1_1/" {%if orderby == '1'%} class="active" {%endif%}>默认</a>
+				<a href="/list{{t1.id}}_1_2/?desc={%if desc == '1'%}0{%else%}1{%endif%}" {%if orderby == '2'%} class="active" {%endif%}>价格</a>
+				<a href="/list{{t1.id}}_1_3/" {%if orderby == '3'%} class="active" {%endif%}>人气</a>
+			</div>
+
+			<ul class="goods_type_list clearfix">
+				{%for goods in page%}
+				<li>
+					<a href="/{{goods.id}}/"><img src="/static/{{goods.gpic}}"></a>
+					<h4><a href="/{{goods.id}}/">{{goods.gtitle}}</a></h4>
+					<div class="operate">
+						<span class="prize">￥{{goods.gprice}}</span>
+						<span class="unit">{{goods.gprice}}/{{goods.gunit}}</span>
+						<a href="javascript:add_cart({{goods.id}});" class="add_goods" title="加入购物车"></a>
+					</div>
+				</li>
+				{%endfor%}
+
+			</ul>
+
+			<div class="pagenation">
+				<!--如果有前一页，就显示首页和上一页-->
+				{% if page.has_previous%}
+					<!-- 因为（\d+）是贪婪的，所以用下划线将数字分割开，page.number是显示当前页的页码，
+				之后用过滤器进行减一就是前一页了，因为不能直接运算，所以用过滤器-->
+					<a href="/list{{t1.id}}_1_{{orderby}}/?desc={{desc}}">首页</a>
+					<a href="/list{{t1.id}}_{{page.number|add:-1}}_{{orderby}}/?desc={{desc}}"><上一页</a>
+				{%endif%}
+				<!--如果页码少于5页-->
+				{%if page.paginator.num_pages < 5%}
+					{%for pindex in page.paginator.page_range %}
+						{%if pindex == page.number%}
+							<a href="#" class="active">{{pindex}}</a>
+						{%else%}
+							<a href="/list{{t1.id}}_{{pindex}}_{{orderby}}/?desc={{desc}}">{{pindex}}</a>
+						{%endif%}
+					{%endfor%}
+				<!--大于5页的时候-->
+				{%else%}
+					{%if page.number == 1 %}
+						<a href="#" class="active">1</a>
+						<a href="/list{{t1.id}}_2_{{orderby}}/?desc={{desc}}">2</a>
+						<a href="/list{{t1.id}}_3_{{orderby}}/?desc={{desc}}">3</a>
+						<a href="/list{{t1.id}}_4_{{orderby}}/?desc={{desc}}">4</a>
+						<a href="/list{{t1.id}}_5_{{orderby}}/?desc={{desc}}">5</a>
+					{%elif page.number == 2%}
+						<a href="/list{{t1.id}}_1_{{orderby}}/?desc={{desc}}">1</a>
+						<a href="#" class="active">2</a>
+						<a href="/list{{t1.id}}_3_{{orderby}}/?desc={{desc}}">3</a>
+						<a href="/list{{t1.id}}_4_{{orderby}}/?desc={{desc}}">4</a>
+						<a href="/list{{t1.id}}_5_{{orderby}}/?desc={{desc}}">5</a>
+					{%elif page.number == page.paginator.num_pages%}
+						<a href="/list{{t1.id}}_{{page.number|add:-4}}_{{orderby}}/?desc={{desc}}">{{page.number|add:-4}}</a>
+						<a href="/list{{t1.id}}_{{page.number|add:-3}}_{{orderby}}/?desc={{desc}}">{{page.number|add:-3}}</a>
+						<a href="/list{{t1.id}}_{{page.number|add:-2}}_{{orderby}}/?desc={{desc}}">{{page.number|add:-2}}</a>
+						<a href="/list{{t1.id}}_{{page.number|add:-1}}_{{orderby}}/?desc={{desc}}">{{page.number|add:-1}}</a>
+						<a href="#" class="active">{{page.number}}</a>
+					{%elif page.number == page.paginator.num_pages|add:-1%}
+						<a href="/list{{t1.id}}_{{page.number|add:-3}}_{{orderby}}/?desc={{desc}}">{{page.number|add:-3}}</a>
+						<a href="/list{{t1.id}}_{{page.number|add:-2}}_{{orderby}}/?desc={{desc}}">{{page.number|add:-2}}</a>
+						<a href="/list{{t1.id}}_{{page.number|add:-1}}_{{orderby}}/?desc={{desc}}">{{page.number|add:-1}}</a>
+						<a href="#" class="active">{{page.number}}</a>
+						<a href="/list{{t1.id}}_{{page.number|add:1}}_{{orderby}}/?desc={{desc}}">{{page.number|add:1}}</a>
+					{%else%}
+						<a href="/list{{t1.id}}_{{page.number|add:-2}}_{{orderby}}/?desc={{desc}}">{{page.number|add:-2}}</a>
+						<a href="/list{{t1.id}}_{{page.number|add:-1}}_{{orderby}}/?desc={{desc}}">{{page.number|add:-1}}</a>
+						<a href="#" class="active">{{page.number}}</a>
+						<a href="/list{{t1.id}}_{{page.number|add:1}}_{{orderby}}/?desc={{desc}}">{{page.number|add:1}}</a>
+						<a href="/list{{t1.id}}_{{page.number|add:2}}_{{orderby}}/?desc={{desc}}">{{page.number|add:2}}</a>
+					{%endif%}
+				{%endif%}
+				{%if page.has_next%}
+					<a href="/list{{t1.id}}_{{page.number|add:1}}_{{orderby}}/?desc={{desc}}">下一页></a>
+					<a href="/list{{t1.id}}_{{page.paginator.num_pages}}_{{orderby}}/?desc={{desc}}">末页></a>
+				{%endif%}
+				<hr>
+				首页 上一页 5 6 7 8 9 下一页 末页
+			</div>
+		</div>
+{%endblock right%}
+

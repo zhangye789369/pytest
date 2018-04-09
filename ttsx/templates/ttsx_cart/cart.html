@@ -1,0 +1,144 @@
+{%extends 'base.html'%}
+
+{%block head%}
+<!--购物车功能主要是练习js的一些功能，做一些计算-->
+<script>
+	<!--对total进行封装-->
+	function total() {
+		total_all = 0;
+		$('.cart_list_td').each(function () {//逐行获取单价、数量，计算小计
+			price = parseFloat($(this).children('.col05').text());//单价
+			count = parseInt($(this).find('.num_show').val());//数量
+			total1 = price*count; // 小计
+			if ($(this).find(':checkbox').prop('checked')){
+				total_all+=total1;    //总金额
+			}
+			$(this).children('.col07').text(total1.toFixed(2)); // 显示小计
+
+        });
+		//显示
+		$('.total_count em').text($('.cart_list_td').length);// 总商品数
+		$('.settlements em').text(total_all.toFixed(2));//总金额
+		$('.settlements b').text($(':checked:not(#check_all)').length);//选中的商品数
+    };
+	//对商品进行删除，使用ajx，不刷新页面
+	function del(id) {
+        //confirm确认框，
+		if (confirm('确定要删除吗？')){
+		    //发起ajx请求，到view中去执行删除操作，数据库中删除了数据，
+			// 返回成功的js，在这边接收，如果成功，删除视图，重新计算数量，小计
+		    $.get('/cart/del/',{'id':id}, function (data) {
+				if (data.ok){
+				    $('#'+id).remove();
+				    total();
+				}
+            });
+		}
+
+    }
+	
+    $(function () {
+	    total();
+	 	//全选、全消
+		$('#check_all').click(function () {
+            //点击最后一个checkbox，它的状态就是所有checkbox的状态
+			var checked = $(this).prop('checked');
+			//设置除了最后一个checkbox的其他checkbox的选中状态
+			$(':checkbox:not(#check_all)').prop('checked',checked);   //选择全部checkbox
+
+        });
+		//选择  当全部选中的时候，取消一个商品，就将check_all上的选中状态取消
+		$(':checkbox:not(#check_all)').click(function () {
+		    //所有
+		    var checkbox_count=$(':checkbox:not(#check_all)').length;
+		    //所有被选中的数量
+		    var checked_count=$(':checked:not(#check_all)').length;
+		    if (checkbox_count==checked_count){
+		        $('#check_all').prop('checked',true);
+			}else{
+		        $('#check_all').prop('checked',false);
+			}
+			total();
+        });
+		//修改数量
+		$('.num_show').blur(function () {
+            //获取当前input输入数值
+			var count = parseInt($(this).val());
+			//this表示当前的input，要想找到，父类同级的子级，那么得在当前的位置往上找，
+			// 找到当前所在位置的父级（parents），再找到父级的兄弟（siblings）
+			//在找到兄弟的子级（chidlren）
+			var kucun = parseInt($(this).parents('.col06').siblings('.col03').children('em').text());
+			//验证值的有效性（输入框）
+			if (isNaN(count)){
+			    count=1;
+			}else if (count<1){
+			    count=1;
+			}else if (count>kucun){
+			    count =kucun;
+			}
+			$(this).val(count);
+			var id=$(this).parents('ul').prop('id');
+			//发起ajx请求，来处理
+			$.get('/cart/edit/',{'id':id,'count':count},function (data) {
+				if(data.ok){
+				    total();
+				}
+            });
+        });
+		//数量+
+		$('.add').click(function () {
+            //拿到点击加号下边的文本框
+			var count = $(this).next().val();
+			count++;
+			$(this).next().val(count).blur();
+        });
+		//数量-
+		$('.minus').click(function () {
+			var count = $(this).prev().val();
+			count--;
+			$(this).prev().val(count).blur();
+        });
+    });
+
+</script>
+{%endblock head%}
+
+{%block body%}
+
+	<div class="total_count">全部商品<em>2</em>件</div>
+	<ul class="cart_list_th clearfix">
+		<li class="col01">商品名称</li>
+		<li class="col02">商品单位</li>
+		<li class="col03">商品价格</li>
+		<li class="col04">数量</li>
+		<li class="col05">小计</li>
+		<li class="col06">操作</li>
+	</ul>
+<form action="/cart/order/" method="post">
+	{%csrf_token%}
+	{%for cart in cart_list%}
+	<ul class="cart_list_td clearfix" id="{{cart.id}}">
+		<li class="col01"><input type="checkbox" name="cart_id" value="{{cart.id}}" checked="checked"></li>
+		<li class="col02"><img src="/static/{{cart.goods.gpic}}"></li>
+		<li class="col03">{{cart.goods.gtitle}}<br><em>{{cart.goods.gkuncun}}</em></li>
+		<li class="col04">{{cart.goods.gunit}}</li>
+		<li class="col05">{{cart.goods.gprice}}元</li>
+		<li class="col06">
+			<div class="num_add">
+				<a href="javascript:;" class="add fl">+</a>
+				<input type="text" class="num_show fl" value="{{cart.count}}">
+				<a href="javascript:;" class="minus fl">-</a>	
+			</div>
+		</li>
+		<li class="col07"></li>
+		<li class="col08"><a href="javascript:del({{cart.id}});">删除</a></li>
+	</ul>
+	{%endfor%}
+	<ul class="settlements">
+		<li class="col01"><input type="checkbox" id="check_all" checked="checked"></li>
+		<li class="col02">全选</li>
+		<li class="col03">合计(不含运费)：<span>¥</span><em>42.60</em><br>共计<b>2</b>件商品</li>
+		<li class="col04"><input type="submit" value="去结算"></li>
+	</ul>
+</form>
+{%endblock body%}
